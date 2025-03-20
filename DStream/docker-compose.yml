@@ -90,6 +90,27 @@ services:
       - ./spark-apps:/opt/spark-apps
       - ./spark-data:/opt/spark-data
 
+  # JupyterLab with PySpark for interactive data analysis
+  jupyter-spark:
+    image: jupyter/pyspark-notebook:latest
+    container_name: jupyter-spark
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYSPARK_SUBMIT_ARGS=--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2 --conf spark.jars.ivy=/home/jovyan/.ivy2 pyspark-shell
+    volumes:
+      - ./jupyter-notebooks:/home/jovyan/work
+      - ./spark-data:/home/jovyan/data
+    networks:
+      - streaming-network
+    depends_on:
+      - spark-master
+      - kafka
+    command: >
+      start-notebook.sh --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.ip='0.0.0.0'
+
   # Data generator to produce test data for Kafka
   data-generator:
     build:
