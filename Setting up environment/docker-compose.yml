@@ -92,7 +92,7 @@ services:
 
   # JupyterLab with PySpark for interactive data analysis
   jupyter-spark:
-    image: jupyter/pyspark-notebook:latest
+    image: quay.io/jupyter/pyspark-notebook
     container_name: jupyter-spark
     ports:
       - "8888:8888"
