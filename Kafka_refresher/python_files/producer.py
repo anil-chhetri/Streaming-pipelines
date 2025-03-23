@@ -26,7 +26,7 @@ def delivery_report(err, msg):
     if err is not None:
         logger.error(f"Message delivery failed: {err}")
     else:
-        logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+        logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
 def create_topics():
     """Creates required Kafka topics if they don't exists."""
