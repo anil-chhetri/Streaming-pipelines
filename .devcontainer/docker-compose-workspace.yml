@@ -65,8 +65,8 @@ services:
 
   playground:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: Kafka_refresher/Dockerfile
     container_name: playground
     command: tail -f /dev/null
     volumes:
