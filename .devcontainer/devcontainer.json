@@ -1,13 +1,15 @@
 {
+  "name": "github lab",
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "features": {
-    
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "postCreateCommand": "echo \"source /workspaces/Streaming-pipelines/env-setup.sh\"  >> ~/.bashrc",
+  "postCreateCommand": "echo \"source /workspaces/Streaming-pipelines/env-setup.sh\" >> ~/.bashrc && docker compose -f .devcontainer/docker-compose-workspace.yml up -d",
+  "postStartCommand": "docker compose -f .devcontainer/docker-compose-workspace.yml up -d",
   "customizations": {
     "vscode": {
       "extensions": [
-       "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker"
       ],
       "settings": {
         "keybindings": [
