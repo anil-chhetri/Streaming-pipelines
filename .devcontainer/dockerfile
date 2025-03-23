@@ -2,11 +2,8 @@ FROM python:3.9-slim
 
 WORKDIR /python_files
 
-COPY python_files/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY python_files/ .
-
+COPY ./../Kafka-refresher/ .
+RUN pip install --no-cache-dir -r python_files/requirements.txt
 
 # Install OpenSSH server
 RUN apt-get update && apt-get install -y openssh-server
@@ -14,7 +11,7 @@ RUN apt-get update && apt-get install -y openssh-server
 # Create an SSH directory for the root user
 
 # Copy the authorized keys (assuming you place it in the context)
-COPY id_rsa.pub /root/.ssh/authorized_keys
+# COPY id_rsa.pub /root/.ssh/authorized_keys
 
 # Set permissions for SSH directory and keys
 RUN chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys
