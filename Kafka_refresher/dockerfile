@@ -1,5 +1,6 @@
 FROM python:3.9-slim
 
+WORKDIR /Kafka_refresher
 
 COPY Kafka_refresher/python_files/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
