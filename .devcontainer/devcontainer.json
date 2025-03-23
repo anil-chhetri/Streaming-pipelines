@@ -2,10 +2,8 @@
   "name": "github lab",
   "image": "mcr.microsoft.com/devcontainers/universal:2",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "postCreateCommand": "echo \"source /workspaces/Streaming-pipelines/env-setup.sh\" >> ~/.bashrc",
-  "postStartCommand": "docker compose -f .devcontainer/docker-compose-workspace.yml up -d",
   "customizations": {
     "vscode": {
       "extensions": [
