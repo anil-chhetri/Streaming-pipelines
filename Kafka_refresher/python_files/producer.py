@@ -36,7 +36,7 @@ def create_topics():
     admin_client = AdminClient(config)
     
     topic_list = [
-        NewTopic(USER_EVENTS_TOPIC, num_partitions=3, replication_factor=1)
+        NewTopic(USER_EVENTS_TOPIC, num_partitions=6, replication_factor=1)
     ]
 
     fs = admin_client.create_topics(topic_list)
