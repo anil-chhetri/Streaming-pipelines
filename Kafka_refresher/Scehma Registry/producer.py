@@ -1,11 +1,13 @@
 from Customer import Customer
 
 import logging
-import json
 import time 
 
-from confluent_kafka import Producer, KafkaError
+from confluent_kafka import Producer, SerializingProducer
 from confluent_kafka.admin import NewTopic, AdminClient
+from confluent_kafka.schema_registry.avro import AvroSerializer
+from confluent_kafka.serialization import StringSerializer
+from confluent_kafka.schema_registry import SchemaRegistryClient
 
 
 
@@ -26,13 +28,41 @@ class KafkaProducer:
         'compression.type': 'snappy',
         'queue.buffering.max.messages': 1000,
     }
+    SCHEMA_REISTRY_URL = 'http://schema-registry:8081'
 
     def __init__(self, config= {}):
         self.logger = logging.getLogger(__name__)
-        self.producer = Producer(
-            {**KafkaProducer.KAFKA_PRODUCER_DEFAULT_CONFIG
-             , **config}
+        config = {
+                **KafkaProducer.KAFKA_PRODUCER_DEFAULT_CONFIG
+                , **config
+            }
+        logger.info(config)
+        self.producer = self.create_producer(config)
+
+
+    def create_producer(self, config):
+        producer = SerializingProducer(config)
+        return producer
+
+    @classmethod
+    def register_schema_registry(cls):
+        config = {
+            'url': KafkaProducer.SCHEMA_REISTRY_URL
+        }
+
+        schema_client = SchemaRegistryClient(conf=config)
+        logger.info('registering schema to schema registry')
+
+        with open('schema/v1_customer_schema.avsc') as f:
+            schema_str = f.read()
+
+        avro = AvroSerializer(
+            schema_registry_client=schema_client,
+            schema_str=schema_str
         )
+
+        return avro
+
 
     def create_topic(self, name=''):
         config = {
@@ -50,11 +80,12 @@ class KafkaProducer:
         topic_list = [
             NewTopic(name,num_partitions=6,replication_factor=1)
         ]
+
         result = admin_client.create_topics(topic_list)
+        
         for topic, future_function in result.items():
             try:
                 future_function.result()
-                self.logger.info(dir(future_function))
                 self.logger.info(f'Topic created: {topic}')
             except Exception as e:
                 logger.info(e)
@@ -64,8 +95,8 @@ class KafkaProducer:
         event = event_producing_object().as_dict()
         self.producer.produce(
             topic_name,
-            key = str(event.get('id')).encode('utf-8'),
-            value = json.dumps(event).encode('utf-8'),
+            key = str(event.get('id')),
+            value = event,
             on_delivery=self.delivery_report
         )
         num = self.producer.poll(5)
@@ -89,7 +120,12 @@ def main(logger):
     customer = Customer.get_customer()
     logger.info(customer.as_dict())
 
-    producer = KafkaProducer()
+
+    avro_config = {
+        "key.serializer": StringSerializer(),
+        "value.serializer": KafkaProducer.register_schema_registry()
+    }
+    producer = KafkaProducer(avro_config)
     producer.create_topic('customer_event_topic')
     try:
         while True:

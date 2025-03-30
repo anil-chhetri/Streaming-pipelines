@@ -16,7 +16,7 @@ class Customer:
     
     def as_dict(self):
         return {
-            "id": self.id.int,
+            "id": str(self.id.int),
             "name": self.name,
             "email": self.email
         }
