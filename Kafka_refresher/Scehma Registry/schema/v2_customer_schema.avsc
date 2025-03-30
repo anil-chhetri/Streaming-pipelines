@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "namespace": "SchemaRegistry.example",
+  "name": "Customer",
+  "version": "2",
+  "fields": [
+    {"name": "id", "type": "int"},
+    {"name": "name", "type": "string"},
+    {"name": "email", "type": ["null", "string"], "default": null},
+    {"name": "phone", "type": ["null", "string"], "default": null},
+    {"name": "status", "type": ["null", {"type": "enum", "name": "CustomerStatus", "symbols": ["ACTIVE", "INACTIVE", "SUSPENDED"]}]}
+  ]
+}

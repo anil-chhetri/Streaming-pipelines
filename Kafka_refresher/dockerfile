@@ -1,11 +1,11 @@
 FROM python:3.9-slim
 
-WORKDIR /python_files
+WORKDIR .
 
-COPY python_files/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY python_files .
+# COPY . .
 
 
 # Install OpenSSH server

@@ -1,0 +1,11 @@
+{
+    "type": "record",
+    "namespace": "SchemaRegistry.example",
+    "name": "Customer",
+    "version": "1",
+    "fields": [
+        {"name": "id", "type": "int"},
+        {"name": "name", "type": "string"},
+        {"name": "email", "type": ["null", "string"], "default": null}
+    ]
+}
