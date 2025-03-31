@@ -2,12 +2,14 @@ from Customer import Customer
 
 import logging
 import time 
+import json
+from deepdiff import DeepDiff
 
-from confluent_kafka import Producer, SerializingProducer
+from confluent_kafka import SerializingProducer
 from confluent_kafka.admin import NewTopic, AdminClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import StringSerializer
-from confluent_kafka.schema_registry import SchemaRegistryClient
+from confluent_kafka.schema_registry import SchemaRegistryClient, Schema
 
 
 
@@ -29,6 +31,7 @@ class KafkaProducer:
         'queue.buffering.max.messages': 1000,
     }
     SCHEMA_REISTRY_URL = 'http://schema-registry:8081'
+    KAFKA_TOPIC = 'customer_event_topic'
 
     def __init__(self, config= {}):
         self.logger = logging.getLogger(__name__)
@@ -36,7 +39,6 @@ class KafkaProducer:
                 **KafkaProducer.KAFKA_PRODUCER_DEFAULT_CONFIG
                 , **config
             }
-        logger.info(config)
         self.producer = self.create_producer(config)
 
 
@@ -45,24 +47,76 @@ class KafkaProducer:
         return producer
 
     @classmethod
-    def register_schema_registry(cls):
+    def register_schema_registry(cls, subject_name, path_to_arvo='schema/v1_customer_schema.avsc'):
+        try:
+            config = {
+                'url': KafkaProducer.SCHEMA_REISTRY_URL
+            }
+
+            schema_client = SchemaRegistryClient(conf=config)
+
+            with open(path_to_arvo) as f:
+                schema_str = f.read()
+
+            schema_id = schema_client.register_schema(subject_name, Schema(schema_str, schema_type="AVRO"))
+            logger.info(f'schema registered: {subject_name} with schema id: {schema_id}')
+
+            avro = AvroSerializer(
+                schema_registry_client=schema_client,
+                schema_str=schema_str
+            )
+
+        except Exception as e:
+            logger.info(f'error in registering schema: {e}')
+            avro = None
+
+        return avro
+    
+    @classmethod
+    def update_schema_registry(cls, path_to_arvo, subject_name=None, compatibility='FULL'):
+        subject_name = subject_name or KafkaProducer.KAFKA_TOPIC + '-value'
         config = {
             'url': KafkaProducer.SCHEMA_REISTRY_URL
         }
 
         schema_client = SchemaRegistryClient(conf=config)
-        logger.info('registering schema to schema registry')
 
-        with open('schema/v1_customer_schema.avsc') as f:
+        with open(path_to_arvo) as f:
             schema_str = f.read()
 
-        avro = AvroSerializer(
-            schema_registry_client=schema_client,
-            schema_str=schema_str
-        )
+        try:
+            latest_schema = schema_client.get_latest_version(subject_name)
+            logger.info(f'latest schema version: {latest_schema.version}')
+            # print(dir(latest_schema))
+            
+            latest_schema_str = dict(json.loads(latest_schema.schema.schema_str))
+            current_schema_str = dict(json.loads(schema_str))
 
-        return avro
+            print(latest_schema_str)
+            print(current_schema_str)
 
+            diff_result = DeepDiff(latest_schema_str, current_schema_str, ignore_order=True)
+            logger.info(bool(diff_result))
+
+            if diff_result: # true: diff result is empty
+                logger.info('schema is different')
+
+                logger.info('changing schema compatibility')
+                schema_client.set_compatibility(subject_name, compatibility)
+
+                logger.info('testing compatibility of schema')
+                result = schema_client.test_compatibility(subject_name, Schema(schema_str, schema_type="AVRO"), version='latest')
+                if not result:
+                    logger.info('schema is not compatible')
+                else: 
+                    logger.info('schema is compatible')
+            else: 
+                logger.info('schema is same')
+
+        except Exception as e:
+            logger.info(f'error in updating schema registry: {e}')
+        
+        return KafkaProducer.register_schema_registry(subject_name, path_to_arvo)
 
     def create_topic(self, name=''):
         config = {
@@ -123,13 +177,13 @@ def main(logger):
 
     avro_config = {
         "key.serializer": StringSerializer(),
-        "value.serializer": KafkaProducer.register_schema_registry()
+        "value.serializer": KafkaProducer.update_schema_registry(path_to_arvo='schema/v2_customer_schema.avsc')
     }
     producer = KafkaProducer(avro_config)
-    producer.create_topic('customer_event_topic')
+    producer.create_topic(KafkaProducer.KAFKA_TOPIC)
     try:
         while True:
-            producer.start('customer_event_topic', Customer.get_customer)
+            producer.start(KafkaProducer.KAFKA_TOPIC, Customer.get_customer)
             time.sleep(10)
             
     except KeyboardInterrupt as k:
