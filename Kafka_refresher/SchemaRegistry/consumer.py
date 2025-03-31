@@ -61,7 +61,7 @@ class KafkaConsumer():
         self.logger.info(f"partitions assigned: {partitions}")
 
     
-    def start_consuming(self, time_out = 10):
+    def start_consuming(self, time_out = 1):
         msg = self.consumer.poll(time_out)
 
         if msg is None:
@@ -93,7 +93,7 @@ def main(logger):
     try:
         while True:
             msgs = consumer.start_consuming()
-            time.sleep(10)
+            time.sleep(1)
     except KeyboardInterrupt as k:
         consumer.stop()
         logger.info('stopping the consumer')
